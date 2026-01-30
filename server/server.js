@@ -25,7 +25,7 @@ const pool = new Pool({
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://192.168.1.X:3000'],
+  origin: ['http://localhost:3000', 'http://192.168.1.66:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 })); 
@@ -109,38 +109,40 @@ app.get('/api/cursos/:id', async (req, res) => {
 });
 
 
-
 // Rota: Criar um novo curso
 app.post('/api/cursos', async (req, res) => {
-  console.log('\n📍 POST /api/cursos');
-  const { titulo, descricao, carga_horaria, duracao, preco, vagas, instrutor, imagem } = req.body;
+  const { titulo, descricao, carga_horaria, duracao, preco, vagas } = req.body;
 
-  console.log('   📋 Dados recebidos:', { titulo, descricao, carga_horaria, duracao, preco, vagas, instrutor });
+  console.log('\n📍 POST /api/cursos');
+  console.log('   📋 Dados recebidos:', req.body);
 
   try {
-    // Validar campos obrigatórios
+    // Validação básica
     if (!titulo || !descricao || !carga_horaria || !duracao || !preco || !vagas) {
-      console.log('   ❌ Campos obrigatórios faltando');
-      return res.status(400).json({ error: 'Campos obrigatórios faltando: titulo, descricao, carga_horaria, duracao, preco, vagas' });
+      console.log('   ❌ Campos obrigatórios em falta');
+      return res.status(400).json({ error: 'Campos obrigatórios em falta' });
     }
 
-    console.log('   1️⃣ Inserindo novo curso no banco...');
+    console.log('   1️⃣ Inserindo novo curso...');
+    
+    // Inserção - converter preco para texto com formato R$
+    const precoFormatado = `R$ ${parseFloat(preco).toFixed(2)}`.replace('.', ',');
     
     const result = await pool.query(
-      'INSERT INTO cursos (titulo, descricao, carga_horaria, duracao, preco, vagas, instrutor, imagem) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [titulo, descricao, parseInt(carga_horaria), duracao, parseFloat(preco), parseInt(vagas), instrutor || null, imagem || null]
+      'INSERT INTO cursos (titulo, descricao, carga_horaria, duracao, preco, vagas) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [titulo, descricao, parseInt(carga_horaria), duracao, precoFormatado, parseInt(vagas)]
     );
 
-    console.log('   ✅ Curso criado com sucesso! ID:', result.rows[0].id);
-    res.status(201).json({
-      success: true,
+    console.log('   ✅ Curso criado com sucesso! Titulo:', result.rows[0].titulo);
+    res.status(201).json({ 
+      success: true, 
       message: 'Curso criado com sucesso!',
-      curso: result.rows[0]
+      curso: result.rows[0] 
     });
-
   } catch (error) {
-    console.error('   ❌ ERRO:', error.message);
-    res.status(500).json({
+    console.error('   ❌ ERRO na query:', error.message);
+    console.error('   📋 Stack:', error.stack);
+    res.status(500).json({ 
       error: 'Erro ao criar curso',
       mensagem: error.message,
       detalhes: process.env.NODE_ENV === 'development' ? error.stack : undefined
@@ -201,10 +203,10 @@ app.delete('/api/cursos/:id', async (req, res) => {
 // Rota: Atualizar um curso
 app.put('/api/cursos/:id', async (req, res) => {
   const { id } = req.params;
-  const { titulo, descricao, carga_horaria, duracao, preco, vagas, instrutor, imagem } = req.body;
+  const { titulo, descricao, carga_horaria, duracao, preco, vagas } = req.body;
   
   console.log('\n📍 PUT /api/cursos/:id - ID:', id);
-  console.log('   📋 Dados a atualizar:', { titulo, descricao, carga_horaria, duracao, preco, vagas, instrutor });
+  console.log('   📋 Dados recebidos:', req.body);
 
   try {
     // Validar ID
@@ -214,9 +216,13 @@ app.put('/api/cursos/:id', async (req, res) => {
       return res.status(400).json({ error: 'ID do curso inválido' });
     }
 
+    // Validação básica
+    if (!titulo || !descricao || !carga_horaria || !duracao || !preco || !vagas) {
+      console.log('   ❌ Campos obrigatórios em falta');
+      return res.status(400).json({ error: 'Campos obrigatórios em falta' });
+    }
+
     console.log('   1️⃣ Verificando se o curso existe...');
-    
-    // Verificar se curso existe
     const cursoExistente = await pool.query('SELECT * FROM cursos WHERE id = $1', [cursoId]);
     
     if (cursoExistente.rows.length === 0) {
@@ -226,55 +232,32 @@ app.put('/api/cursos/:id', async (req, res) => {
 
     console.log('   2️⃣ Atualizando o curso...');
     
-    // Construir a query dinamicamente baseado nos campos fornecidos
-    const campos = [];
-    const valores = [];
-    let indice = 1;
-
-    if (titulo !== undefined) {
-      campos.push(`titulo = $${indice++}`);
-      valores.push(titulo);
-    }
-    if (descricao !== undefined) {
-      campos.push(`descricao = $${indice++}`);
-      valores.push(descricao);
-    }
-    if (carga_horaria !== undefined) {
-      campos.push(`carga_horaria = $${indice++}`);
-      valores.push(parseInt(carga_horaria));
-    }
-    if (duracao !== undefined) {
-      campos.push(`duracao = $${indice++}`);
-      valores.push(duracao);
-    }
-    if (preco !== undefined) {
-      campos.push(`preco = $${indice++}`);
-      valores.push(parseFloat(preco));
-    }
-    if (vagas !== undefined) {
-      campos.push(`vagas = $${indice++}`);
-      valores.push(parseInt(vagas));
-    }
-    if (instrutor !== undefined) {
-      campos.push(`instrutor = $${indice++}`);
-      valores.push(instrutor);
-    }
-    if (imagem !== undefined) {
-      campos.push(`imagem = $${indice++}`);
-      valores.push(imagem);
-    }
-
-    if (campos.length === 0) {
-      console.log('   ⚠️  Nenhum campo para atualizar');
-      return res.status(400).json({ error: 'Nenhum campo para atualizar' });
-    }
-
-    valores.push(cursoId);
-    const query = `UPDATE cursos SET ${campos.join(', ')} WHERE id = $${indice} RETURNING *`;
+    // Converter preco para texto com formato R$
+    const precoFormatado = `R$ ${parseFloat(preco).toFixed(2)}`.replace('.', ',');
     
-    const result = await pool.query(query, valores);
+    // Query simples e segura
+    const result = await pool.query(
+      `UPDATE cursos 
+       SET titulo = $1, 
+           descricao = $2, 
+           carga_horaria = $3, 
+           duracao = $4, 
+           preco = $5, 
+           vagas = $6
+       WHERE id = $7 
+       RETURNING *`,
+      [
+        titulo,
+        descricao,
+        parseInt(carga_horaria),
+        duracao,
+        precoFormatado,
+        parseInt(vagas),
+        cursoId
+      ]
+    );
 
-    console.log('   ✅ Curso atualizado com sucesso!');
+    console.log('   ✅ Curso atualizado com sucesso! Titulo:', result.rows[0].titulo);
     res.json({
       success: true,
       message: 'Curso atualizado com sucesso!',
@@ -282,7 +265,8 @@ app.put('/api/cursos/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('   ❌ ERRO:', error.message);
+    console.error('   ❌ ERRO na query:', error.message);
+    console.error('   📋 Stack:', error.stack);
     res.status(500).json({
       error: 'Erro ao atualizar curso',
       mensagem: error.message,
