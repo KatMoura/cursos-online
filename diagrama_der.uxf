@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<diagram program="umletino" version="15.1">
+  <zoom_level>10</zoom_level>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>80</x>
+      <y>80</y>
+      <w>260</w>
+      <h>220</h>
+    </coordinates>
+    <panel_attributes>CURSOS
+--
+id : SERIAL [PK]
+titulo : VARCHAR(250)
+descricao : TEXT
+carga_horaria : INT
+vagas : INT
+duracao : VARCHAR(50)
+preco : VARCHAR(20)
+imagem : VARCHAR(255)
+vagas_disponiveis : INT
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>520</x>
+      <y>80</y>
+      <w>260</w>
+      <h>200</h>
+    </coordinates>
+    <panel_attributes>ALUNOS
+--
+id : SERIAL [PK]
+nome : VARCHAR(100)
+email : VARCHAR(100) [UNIQUE]
+celular : BIGINT
+data_cadastro : TIMESTAMP
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>300</x>
+      <y>360</y>
+      <w>260</w>
+      <h>170</h>
+    </coordinates>
+    <panel_attributes>MATRICULAS
+--
+id : SERIAL [PK]
+id_aluno : INT [FK -> alunos.id]
+id_curso : INT [FK -> cursos.id]
+data_matricula : TIMESTAMP
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>260</x>
+      <y>300</y>
+      <w>160</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>1..N</panel_attributes>
+    <additional_attributes>150;10;10;70</additional_attributes>
+  </element>
+
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>520</x>
+      <y>300</y>
+      <w>160</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>1..N</panel_attributes>
+    <additional_attributes>10;10;150;70</additional_attributes>
+  </element>
+
+  <element>
+    <id>UMLFrame</id>
+    <coordinates>
+      <x>40</x>
+      <y>30</y>
+      <w>780</w>
+      <h>560</h>
+    </coordinates>
+    <panel_attributes>DER - Sistema de Cursos</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>
